@@ -256,4 +256,126 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+
+    // ─── CHAT WIDGET ───
+    const chatBubble = document.getElementById('chat-bubble');
+    const chatPanel = document.getElementById('chat-panel');
+    const chatClose = document.getElementById('chat-close');
+    const chatInput = document.getElementById('chat-input');
+    const chatSend = document.getElementById('chat-send');
+    const chatMessages = document.getElementById('chat-messages');
+
+    if (chatBubble && chatPanel) {
+        let chatHistory = [];
+
+        // Toggle chat panel
+        function toggleChat() {
+            const isOpen = chatPanel.classList.contains('chat-panel--open');
+            if (isOpen) {
+                chatPanel.classList.remove('chat-panel--open');
+                chatBubble.classList.remove('chat-bubble--open');
+            } else {
+                chatPanel.classList.add('chat-panel--open');
+                chatBubble.classList.add('chat-bubble--open');
+                setTimeout(() => chatInput.focus(), 400);
+            }
+        }
+
+        chatBubble.addEventListener('click', toggleChat);
+        if (chatClose) chatClose.addEventListener('click', toggleChat);
+
+        // Enable/disable send button based on input
+        chatInput.addEventListener('input', () => {
+            if (chatInput.value.trim()) {
+                chatSend.classList.add('chat-input__send--active');
+            } else {
+                chatSend.classList.remove('chat-input__send--active');
+            }
+        });
+
+        // Send message
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            // Add user message to UI
+            appendMessage('user', text);
+            chatInput.value = '';
+            chatSend.classList.remove('chat-input__send--active');
+
+            // Add to history
+            chatHistory.push({ role: 'user', content: text });
+
+            // Show typing indicator
+            const typingEl = showTyping();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: chatHistory })
+                });
+
+                const data = await response.json();
+
+                // Remove typing indicator
+                if (typingEl) typingEl.remove();
+
+                if (response.ok && data.reply) {
+                    appendMessage('ai', data.reply);
+                    chatHistory.push({ role: 'assistant', content: data.reply });
+                } else {
+                    appendMessage('ai', 'I apologize, I\'m having trouble connecting right now. Please try again in a moment.');
+                }
+            } catch (error) {
+                if (typingEl) typingEl.remove();
+                appendMessage('ai', 'I apologize, I\'m having trouble connecting right now. Please try again in a moment.');
+            }
+        }
+
+        chatSend.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Append a message bubble
+        function appendMessage(type, text) {
+            // Remove welcome message if present
+            const welcome = chatMessages.querySelector('.chat-welcome');
+            if (welcome) welcome.remove();
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-msg chat-msg--${type}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-msg__bubble';
+            bubble.textContent = text;
+
+            msgDiv.appendChild(bubble);
+            chatMessages.appendChild(msgDiv);
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Show typing indicator
+        function showTyping() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-typing';
+            typingDiv.innerHTML = `
+                <div class="chat-typing__dots">
+                    <span class="chat-typing__dot"></span>
+                    <span class="chat-typing__dot"></span>
+                    <span class="chat-typing__dot"></span>
+                </div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return typingDiv;
+        }
+    }
 });
