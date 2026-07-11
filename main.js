@@ -221,4 +221,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
         requestAnimationFrame(step);
     }
+
+    // ─── MOBILE NAV TOGGLE ───
+    const hamburger = document.getElementById('nav-hamburger');
+    const mobileNav = document.getElementById('mobile-nav');
+    
+    if (hamburger && mobileNav) {
+        hamburger.addEventListener('click', () => {
+            const isOpen = mobileNav.classList.contains('mobile-nav--open');
+            
+            if (isOpen) {
+                // Close menu
+                mobileNav.classList.remove('mobile-nav--open');
+                hamburger.classList.remove('nav-hamburger--active');
+                hamburger.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+            } else {
+                // Open menu
+                mobileNav.classList.add('mobile-nav--open');
+                hamburger.classList.add('nav-hamburger--active');
+                hamburger.setAttribute('aria-expanded', 'true');
+                document.body.style.overflow = 'hidden'; // Prevent scrolling
+            }
+        });
+        
+        // Close on link click
+        const mobileLinks = mobileNav.querySelectorAll('.mobile-nav__link');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileNav.classList.remove('mobile-nav--open');
+                hamburger.classList.remove('nav-hamburger--active');
+                hamburger.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+            });
+        });
+    }
 });
