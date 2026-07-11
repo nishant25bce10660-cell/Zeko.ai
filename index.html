@@ -107,6 +107,58 @@
     </div>
 
     <script src="main.js"></script>
+
+    <!-- Supabase CMS Integration -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const supabaseUrl = 'https://flgnbjedltuhvfiakovx.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZ25iamVkbHR1aHZmaWFrb3Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3OTM0MjUsImV4cCI6MjA5OTM2OTQyNX0.Jn5IDvlRNxJZmKyZAtc6lfq7AGM14yo7SDgsaWhzc2g';
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
+            // The ID of the "Zeko Default Site" in your database
+            const SITE_ID = '1da706e1-49f1-4108-8ed4-a8fda8b2f288';
+
+            try {
+                const { data, error } = await supabase
+                    .from('content')
+                    .select('hero_title, hero_subtitle')
+                    .eq('site_id', SITE_ID)
+                    .single();
+
+                if (!error && data) {
+                    // Update Hero Title (handling the special span styling)
+                    const heroHeading = document.getElementById('hero-heading');
+                    if (heroHeading && data.hero_title) {
+                        heroHeading.innerHTML = `<span class="hero__heading-line">${data.hero_title}</span>`;
+                    }
+
+                    // Update Hero Subtitle
+                    const heroSubtitle = document.getElementById('hero-subtitle');
+                    if (heroSubtitle && data.hero_subtitle) {
+                        heroSubtitle.textContent = data.hero_subtitle;
+                    }
+                }
+
+                // Native Analytics Tracking
+                let visitorId = localStorage.getItem('zeko_visitor_id');
+                if (!visitorId) {
+                    visitorId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+                    localStorage.setItem('zeko_visitor_id', visitorId);
+                }
+
+                // Fire and forget page view ping
+                supabase.from('page_views').insert([{
+                    site_id: SITE_ID,
+                    visitor_id: visitorId,
+                    url_path: window.location.pathname
+                }]).then(() => {});
+                
+            } catch (err) {
+                console.error("Failed to load CMS content:", err);
+            }
+        });
+    </script>
 </body>
 </html>
 
