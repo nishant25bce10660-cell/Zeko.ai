@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About — zeko.ai</title>
+    <meta name="description" content="Meet the people behind zeko.ai — a team dedicated to building AI that serves humanity.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600;700;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="nav" id="main-nav">
+        <a href="index.html" class="nav__logo" id="nav-logo">zeko.ai</a>
+        <nav class="nav__pill" id="nav-pill" aria-label="Main navigation">
+            <a href="index.html" class="nav__link" id="nav-home">Home</a>
+            <span class="nav__dot" aria-hidden="true">·</span>
+            <a href="solutions.html" class="nav__link" id="nav-solutions">Solutions</a>
+            <span class="nav__dot" aria-hidden="true">·</span>
+            <a href="philosophy.html" class="nav__link" id="nav-philosophy">Philosophy</a>
+            <span class="nav__dot" aria-hidden="true">·</span>
+            <a href="technology.html" class="nav__link" id="nav-technology">Technology</a>
+            <span class="nav__dot" aria-hidden="true">·</span>
+            <a href="about.html" class="nav__link nav__link--active" id="nav-about">About</a>
+        </nav>
+        <div class="nav__actions" id="nav-actions">
+            <button class="nav__lang" id="nav-lang" aria-label="Language selector">EN<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="nav__search" id="nav-search" aria-label="Search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        </div>
+    </header>
+
+    <main class="page">
+        <div class="page__container">
+            <!-- Page Hero -->
+            <div class="page-hero fade-in">
+                <span class="page-hero__label">About</span>
+                <h1 class="page-hero__title">The people building<br>AI for people</h1>
+                <p class="page-hero__description">We're a small, focused team of researchers, designers, and engineers who believe AI's greatest potential lies in making humans more capable.</p>
+            </div>
+
+            <!-- Mission -->
+            <section class="section section--bordered" id="mission-section">
+                <div class="feature-row">
+                    <div class="feature-row__content fade-in">
+                        <span class="section__label">Our Mission</span>
+                        <h2 class="section__title">To create AI that<br>strengthens human connection</h2>
+                        <p class="section__text">Founded in 2023, zeko.ai was born from a simple observation: the most transformative technology is the kind that disappears into the background, quietly making everything around it better.</p>
+                        <p class="section__text" style="margin-top:16px;">We named ourselves after the concept of "善行" (zenko) — good deeds — because we believe technology should be an act of service.</p>
+                    </div>
+                    <div class="feature-row__visual fade-in">
+                        <div class="glow-sphere glow-sphere--gold" style="top: 30%; left: 30%;"></div>
+                        <div class="glow-sphere glow-sphere--blue" style="bottom: 20%; right: 25%;"></div>
+                        <svg width="100" height="100" viewBox="0 0 100 100" fill="none" style="position:relative;z-index:2;opacity:0.12;"><path d="M50 15 L85 50 L50 85 L15 50 Z" stroke="#D89447" stroke-width="0.5"/><circle cx="50" cy="50" r="20" stroke="#73B7E7" stroke-width="0.5"/><circle cx="50" cy="50" r="5" fill="#D89447"/></svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Team -->
+            <section class="section stagger-children" id="team-section">
+                <div style="text-align:center;margin-bottom:48px;" class="fade-in">
+                    <span class="section__label">The Team</span>
+                    <h2 class="section__title" style="max-width:500px;margin:0 auto;">Small team, deep conviction</h2>
+                </div>
+
+                <div class="team-grid">
+                    <div class="team-member fade-in" id="member-aria">
+                        <div class="team-member__avatar team-member__avatar--gold">A</div>
+                        <h3 class="team-member__name">Aria Chen</h3>
+                        <span class="team-member__role">Co-founder & CEO</span>
+                        <p class="team-member__bio">Former research lead at DeepMind. Aria's work on human-AI collaboration has been cited over 3,000 times.</p>
+                    </div>
+                    <div class="team-member fade-in" id="member-marcus">
+                        <div class="team-member__avatar team-member__avatar--blue">M</div>
+                        <h3 class="team-member__name">Marcus Webb</h3>
+                        <span class="team-member__role">Co-founder & CTO</span>
+                        <p class="team-member__bio">Previously built distributed AI systems at Anthropic. Marcus architects Zeko's privacy-first infrastructure.</p>
+                    </div>
+                    <div class="team-member fade-in" id="member-yuki">
+                        <div class="team-member__avatar team-member__avatar--copper">Y</div>
+                        <h3 class="team-member__name">Yuki Tanaka</h3>
+                        <span class="team-member__role">Head of Design</span>
+                        <p class="team-member__bio">Apple Design Award winner. Yuki ensures every interaction with Zeko feels effortless, intuitive, and human.</p>
+                    </div>
+                    <div class="team-member fade-in" id="member-elena">
+                        <div class="team-member__avatar team-member__avatar--gold">E</div>
+                        <h3 class="team-member__name">Elena Petrova</h3>
+                        <span class="team-member__role">Lead ML Engineer</span>
+                        <p class="team-member__bio">Published researcher in adaptive neural architectures. Elena leads the Cognitive Core development team.</p>
+                    </div>
+                    <div class="team-member fade-in" id="member-james">
+                        <div class="team-member__avatar team-member__avatar--blue">J</div>
+                        <h3 class="team-member__name">James Okafor</h3>
+                        <span class="team-member__role">Head of Product</span>
+                        <p class="team-member__bio">Former VP Product at Linear. James bridges the gap between technical capability and genuine user value.</p>
+                    </div>
+                    <div class="team-member fade-in" id="member-sara">
+                        <div class="team-member__avatar team-member__avatar--copper">S</div>
+                        <h3 class="team-member__name">Sara Lindström</h3>
+                        <span class="team-member__role">Ethics & Safety</span>
+                        <p class="team-member__bio">PhD in AI Ethics from Oxford. Sara ensures every model we ship meets the highest standards of responsible AI.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Values Quote -->
+            <div class="pull-quote fade-in" id="about-quote">
+                <p class="pull-quote__text">We don't build AI to impress. We build it to help. That distinction shapes every decision we make.</p>
+                <span class="pull-quote__author">— Aria Chen, Co-founder</span>
+            </div>
+
+            <!-- Stats -->
+            <section class="section fade-in" id="about-stats">
+                <div class="stats-row">
+                    <div class="stat">
+                        <div class="stat__number">28</div>
+                        <div class="stat__label">Team members</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat__number">12</div>
+                        <div class="stat__label">Countries represented</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat__number">8</div>
+                        <div class="stat__label">Published papers</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat__number">1</div>
+                        <div class="stat__label">Shared mission</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CTA -->
+            <section class="cta-banner fade-in" id="about-cta">
+                <h2 class="cta-banner__title">Want to build something<br>meaningful together?</h2>
+                <p class="cta-banner__text">We're always looking for exceptional people who share our conviction that AI should serve humanity.</p>
+                <div class="cta-banner__actions">
+                    <a href="#" class="btn btn--primary" id="btn-careers"><span>View Open Roles</span><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.5 8H12.5M12.5 8L8.5 4M12.5 8L8.5 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+                    <a href="solutions.html" class="btn btn--ghost" id="btn-see-work"><span>See Our Work</span></a>
+                </div>
+            </section>
+        </div>
+
+        <footer class="footer" id="site-footer">
+            <div class="footer__inner">
+                <span class="footer__logo">zeko.ai</span>
+                <div class="footer__links">
+                    <a href="index.html" class="footer__link">Home</a>
+                    <a href="solutions.html" class="footer__link">Solutions</a>
+                    <a href="philosophy.html" class="footer__link">Philosophy</a>
+                    <a href="technology.html" class="footer__link">Technology</a>
+                    <a href="about.html" class="footer__link">About</a>
+                </div>
+                <span class="footer__copy">© 2026 zeko.ai. All rights reserved.</span>
+            </div>
+        </footer>
+    </main>
+    <script src="main.js"></script>
+</body>
+</html>
