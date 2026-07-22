@@ -4,12 +4,13 @@ import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-// UI Components (NO Navbar)
+// UI & Navigation Components
+import Navbar from '../components/ui/Navbar';
 import CustomCursor from '../components/ui/CustomCursor';
 import LoadingScreen from '../components/ui/LoadingScreen';
 import ChatWidget from '../components/ui/ChatWidget';
 
-// Sections
+// Section Widgets
 import HeroSection from '../components/sections/HeroSection';
 import SolutionsSection from '../components/sections/SolutionsSection';
 import PhilosophySection from '../components/sections/PhilosophySection';
@@ -19,32 +20,22 @@ import AboutSection from '../components/sections/AboutSection';
 // WebGL Background
 import BackgroundScene from '../components/webgl/BackgroundScene';
 
-// Smooth Scroll
+// Smooth Scroll Hook
 import { useLenis } from '../lib/useLenis';
 
-// Register GSAP plugins
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
 }
 
 /**
- * Section title labels for the cinematic scroll reveal.
- * These map 1:1 with the section components below.
- */
-const SECTION_TITLES = [
-  'Home',
-  'Solutions',
-  'Philosophy',
-  'Technology',
-  'About',
-];
-
-/**
- * Main Page Orchestrator
+ * Premium Choreographed Scroll Orchestrator
  *
- * No navigation bar. The user scrolls through cinematic scenes.
- * As each section enters, its title fades in as a large overlay label,
- * then dissolves into the actual section content.
+ * Implements exact scroll timing:
+ * - Entry (0-25%): Opacity 0->1, translateY 80px->0px, scale 0.96->1 (cubic-bezier(0.22, 1, 0.36, 1))
+ * - Active (25-70%): Centered stability with subtle 8-12% image parallax
+ * - Exit (70-100%): Opacity 1->0.60, translateY 0px->-40px, scale 1->0.97
+ * - Internal Stagger: Cascading reveal of labels, titles, buttons, and cards (40-70ms delay)
+ * - GPU Accelerated: translate3d, scale, opacity only for 60-120 FPS performance
  */
 export default function Home() {
   const mainRef = useRef(null);
@@ -54,139 +45,116 @@ export default function Home() {
     const lenis = lenisRef.current;
     if (!lenis) return;
 
-    // Sync Lenis ↔ GSAP ScrollTrigger
-    lenis.on('scroll', ScrollTrigger.update);
-    const rafCallback = (time) => lenis.raf(time * 1000);
-    gsap.ticker.add(rafCallback);
-    gsap.ticker.lagSmoothing(0);
+    const handleScroll = () => {
+      ScrollTrigger.update();
+    };
+    lenis.on('scroll', handleScroll);
 
-    // ── Cinematic section transitions ──────────────────────────
-    const sections = gsap.utils.toArray('.section');
-    const titleOverlays = gsap.utils.toArray('.section-title-overlay');
+    const ctx = gsap.context(() => {
+      const widgetContainers = gsap.utils.toArray('.widget-container');
 
-    sections.forEach((section, i) => {
-      const titleEl = titleOverlays[i];
+      widgetContainers.forEach((widget) => {
+        // Internal stagger elements inside widget
+        const staggerElements = widget.querySelectorAll('[data-stagger]');
+        const parallaxImg = widget.querySelector('.parallax-img');
 
-      // ── Incoming title fade-in ──
-      // As the user scrolls INTO this section, the big title label
-      // fades from 0 → 1 in the first 30% of scroll, then fades
-      // back out in the next 30% to reveal the actual content.
-      if (titleEl) {
-        ScrollTrigger.create({
-          trigger: section,
-          start: 'top 80%',
-          end: 'top 10%',
-          scrub: 1.2, // Higher = smoother interpolation
-          onUpdate: (self) => {
-            const p = self.progress;
-            // Smooth ease curve applied to progress
-            const ep = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-            if (ep < 0.5) {
-              const fadeIn = ep / 0.5;
-              gsap.set(titleEl, {
-                opacity: fadeIn,
-                y: 30 - fadeIn * 30,
-                filter: `blur(${(1 - fadeIn) * 8}px)`,
-              });
-            } else {
-              const fadeOut = 1 - (ep - 0.5) / 0.5;
-              gsap.set(titleEl, {
-                opacity: fadeOut,
-                y: -(1 - fadeOut) * 20,
-                filter: `blur(${(1 - fadeOut) * 4}px)`,
-              });
-            }
+        // Main Widget Timeline (Entry -> Active -> Exit)
+        const widgetTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: widget,
+            start: 'top 85%',
+            end: 'bottom 15%',
+            scrub: 0.6, // Smooth cinematic scrub
           },
         });
-      }
 
-      // ── Outgoing dissolve effect ──
-      // Smoother dissolve with higher scrub for premium feel
-      if (i < sections.length - 1) {
-        ScrollTrigger.create({
-          trigger: section,
-          start: 'top top',
-          end: '+=100%',
-          scrub: 1.5, // Very smooth interpolation
-          onUpdate: (self) => {
-            const p = self.progress;
-            if (p > 0.3) {
-              const leave = (p - 0.3) / 0.7;
-              gsap.set(section, {
-                scale: 1 - leave * 0.08,
-                filter: `blur(${leave * 12}px) brightness(${1 - leave * 0.4})`,
-                opacity: 1 - leave,
-              });
-            } else {
-              gsap.set(section, {
-                scale: 1,
-                filter: 'blur(0px) brightness(1)',
-                opacity: 1,
-              });
-            }
+        // 1. ENTRY PHASE (0% -> 25% progress)
+        // TranslateY: 80px -> 0px, Scale: 0.96 -> 1, Opacity: 0 -> 1
+        widgetTl.fromTo(
+          widget,
+          {
+            opacity: 0,
+            y: 80,
+            scale: 0.96,
           },
-        });
-      }
-    });
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.25,
+            ease: 'power3.out',
+          },
+          0
+        );
+
+        // Cascading Internal Stagger Reveal
+        if (staggerElements.length > 0) {
+          widgetTl.fromTo(
+            staggerElements,
+            {
+              opacity: 0,
+              y: 35,
+            },
+            {
+              opacity: 1,
+              y: 0,
+              stagger: 0.05, // 50ms delay between items
+              duration: 0.2,
+              ease: 'power3.out',
+            },
+            0.05
+          );
+        }
+
+        // 2. ACTIVE PHASE (25% -> 70% progress) — Internal Image Parallax (8-12%)
+        if (parallaxImg) {
+          widgetTl.to(
+            parallaxImg,
+            {
+              yPercent: -10, // 10% parallax
+              ease: 'none',
+              duration: 0.45,
+            },
+            0.25
+          );
+        }
+
+        // 3. EXIT PHASE (70% -> 100% progress)
+        // Opacity: 1 -> 0.60, Scale: 1 -> 0.97, TranslateY: 0px -> -40px
+        widgetTl.to(
+          widget,
+          {
+            opacity: 0.6,
+            y: -40,
+            scale: 0.97,
+            duration: 0.3,
+            ease: 'power2.inOut',
+          },
+          0.7
+        );
+      });
+    }, mainRef);
 
     return () => {
-      ScrollTrigger.getAll().forEach((t) => t.kill());
-      gsap.ticker.remove(rafCallback);
+      lenis.off('scroll', handleScroll);
+      ctx.revert();
     };
   }, [lenisRef]);
 
   return (
     <>
       <LoadingScreen />
+      <Navbar />
       <CustomCursor />
       <BackgroundScene />
       <ChatWidget />
 
       <main ref={mainRef}>
-        {/* Section title overlays — positioned inside each section */}
-        {[
-          { component: <HeroSection />, id: 'home' },
-          { component: <SolutionsSection />, id: 'solutions' },
-          { component: <PhilosophySection />, id: 'philosophy' },
-          { component: <TechnologySection />, id: 'technology' },
-          { component: <AboutSection />, id: 'about' },
-        ].map(({ component, id }, i) => (
-          <div key={id} style={{ position: 'relative' }}>
-            {/* The large cinematic title that fades during scroll */}
-            {i > 0 && (
-              <div
-                className="section-title-overlay"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  pointerEvents: 'none',
-                  zIndex: 5,
-                  opacity: 0,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: 'var(--font-heading)',
-                    fontSize: 'clamp(3rem, 8vw, 7rem)',
-                    fontWeight: 700,
-                    letterSpacing: '-0.03em',
-                    background: 'linear-gradient(135deg, #F9A826, #FFC857)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {SECTION_TITLES[i]}
-                </span>
-              </div>
-            )}
-            {component}
-          </div>
-        ))}
+        <HeroSection />
+        <SolutionsSection />
+        <PhilosophySection />
+        <TechnologySection />
+        <AboutSection />
       </main>
     </>
   );

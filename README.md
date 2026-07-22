@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# ⚡ Zeko.ai — Nextlevel Intelligent AI Showcase Platform
 
-## Getting Started
+> A cinematic, scroll-driven web experience built with **Next.js 16 (App Router)**, **TailwindCSS**, **GSAP ScrollTrigger**, **Lenis**, and **Canvas2D**.
 
-First, run the development server:
+![Zeko.ai Showcase Banner](public/hero-bg.png)
 
+---
+
+## 🌟 Key Features
+
+- **📱 Choreographed Scroll Sequence**: 5 distinct showcase widgets (`01` through `05`) that enter, pin, and recede with hardware-accelerated 60–120 FPS performance (`translate3d`, `opacity`, `scale`).
+- **💡 Glassmorphic Navbar with Glowing Feedback**: Top navigation bar featuring real-time active section tracking, glowing pill hover lighting, and tactile click response.
+- **💬 Fullscreen AI Chat Workspace**: Interactive AI assistant panel complete with native file attachment upload support, suggestion chips, and responsive design.
+- **🎯 1:1 High-Contrast Custom Cursor**: Instant hardware mouse tracking with a solid golden ring, inner dot, and smooth ambient glow overlay.
+- **🚀 One-Click Vercel Deployment**: Fully optimized for Next.js App Router static & server rendering.
+
+---
+
+## 🏗️ Tech Stack
+
+- **Framework**: [Next.js 16 (App Router)](https://nextjs.org/)
+- **Styling**: TailwindCSS & Custom Glassmorphism System (`globals.css`)
+- **Animations**: GSAP & GSAP ScrollTrigger
+- **Smooth Scroll Engine**: Lenis
+- **Graphics & Ambient Orbs**: HTML5 Canvas2D Context
+- **Deployment**: Vercel
+
+---
+
+## 🚀 Getting Started Locally
+
+### 1. Prerequisites
+Ensure you have **Node.js 18.0+** installed on your machine.
+
+### 2. Clone the Repository
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/nishant25bce10660-cell/Zeko.ai.git
+cd Zeko.ai
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Install Dependencies
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### 4. Run Development Server
+```bash
+npm run dev
+```
+Open **[http://localhost:3000](http://localhost:3000)** in your browser to preview the site!
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🌐 Deploying to Vercel (1-Click Deployment)
 
-To learn more about Next.js, take a look at the following resources:
+This project is pre-configured for instant deployment on Vercel:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Push this codebase to your GitHub repository (`github.com/nishant25bce10660-cell/Zeko.ai`).
+2. Go to **[Vercel Dashboard](https://vercel.com/dashboard)** and click **Add New Project**.
+3. Import your **Zeko.ai** repository.
+4. Keep the default settings:
+   - **Framework Preset**: `Next.js`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `.next`
+5. Click **Deploy**!
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📁 File Structure & Component Map
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Component / Folder | Description |
+|---|---|
+| `app/page.js` | Main scroll orchestrator & GSAP timeline controller |
+| `app/globals.css` | Design tokens, custom variables, and global CSS reset |
+| `components/ui/Navbar.jsx` | Floating glass navigation bar with glowing hover effects |
+| `components/ui/CustomCursor.jsx` | High-contrast 1:1 hardware cursor & ambient opacity glow |
+| `components/ui/ChatWidget.jsx` | Fullscreen AI Chat modal with file attachment picker |
+| `components/sections/HeroSection.jsx` | `[01]` Hero Overview Showcase Widget |
+| `components/sections/SolutionsSection.jsx` | `[02]` Intelligent Solutions Suite Widget |
+| `components/sections/PhilosophySection.jsx` | `[03]` Core Human Principles Widget |
+| `components/sections/TechnologySection.jsx` | `[04]` Technology Stack Widget |
+| `components/sections/AboutSection.jsx` | `[05]` Company Timeline & Stats Widget |
+| `lib/useLenis.js` | Lenis smooth scroll engine integration |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 📄 License
+
+Created with conviction. Built for humans. Powered by intelligence.

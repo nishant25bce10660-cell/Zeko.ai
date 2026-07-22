@@ -3,110 +3,104 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Ultra-Smooth Custom Cursor with Glow Overlay
- *
- * Uses raw requestAnimationFrame for native refresh-rate (60/120/165Hz).
- * - Inner dot: 92% lerp (near-instant)
- * - Outer ring: 12% lerp (smooth trail)
- * - Glow overlay: Soft radial gradient that follows cursor (8% lerp)
- *
- * On mobile: Shows a fixed soft overlay glow instead.
+ * 1:1 Instant Custom Cursor with Responsive Ambient Glow
+ * Both cursor elements and the golden opacity glow follow the cursor seamlessly without lag.
  */
 export default function CustomCursor() {
   const outerRef = useRef(null);
   const innerRef = useRef(null);
   const glowRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const mobile = window.innerWidth < 768 || 'ontouchstart' in window;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsMobile(mobile);
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768 || 'ontouchstart' in window;
+      setIsMobile(mobile);
+      return mobile;
+    };
 
-    if (mobile) return; // Mobile gets CSS-only overlay
+    if (checkMobile()) return;
 
-    const initFrame = requestAnimationFrame(() => {
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let glowX = mouseX, glowY = mouseY;
+
+    let outerScale = 1, targetOuterScale = 1;
+    let running = true;
+
+    const updatePosition = (x, y) => {
       const outer = outerRef.current;
       const inner = innerRef.current;
+      if (outer && inner) {
+        outer.style.transform = `translate3d(${x - 16}px, ${y - 16}px, 0) scale(${outerScale})`;
+        inner.style.transform = `translate3d(${x - 4}px, ${y - 4}px, 0)`;
+      }
+    };
+
+    const onMove = (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      updatePosition(mouseX, mouseY);
+    };
+
+    const onOver = (e) => {
+      if (e.target.closest('[data-magnetic], button, a, input, textarea, label')) {
+        targetOuterScale = 1.4;
+      }
+    };
+
+    const onOut = (e) => {
+      if (e.target.closest('[data-magnetic], button, a, input, textarea, label')) {
+        targetOuterScale = 1;
+      }
+    };
+
+    const onDown = () => {
+      targetOuterScale = 0.85;
+    };
+
+    const onUp = () => {
+      targetOuterScale = 1;
+    };
+
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('mouseover', onOver, { passive: true });
+    window.addEventListener('mouseout', onOut, { passive: true });
+    window.addEventListener('mousedown', onDown, { passive: true });
+    window.addEventListener('mouseup', onUp, { passive: true });
+
+    function tick() {
+      if (!running) return;
+
       const glow = glowRef.current;
-      if (!outer || !inner || !glow) return;
-
-      let mouseX = window.innerWidth / 2;
-      let mouseY = window.innerHeight / 2;
-      let outerX = mouseX, outerY = mouseY;
-      let innerX = mouseX, innerY = mouseY;
-      let glowX = mouseX, glowY = mouseY;
-      let outerScale = 1, targetOuterScale = 1;
-      let innerScale = 1, targetInnerScale = 1;
-      let running = true;
-
-      const onMove = (e) => { mouseX = e.clientX; mouseY = e.clientY; };
-      const onOver = (e) => {
-        if (e.target.closest('[data-magnetic]')) {
-          targetOuterScale = 1.6;
-          targetInnerScale = 0.5;
-        }
-      };
-      const onOut = (e) => {
-        if (e.target.closest('[data-magnetic]')) {
-          targetOuterScale = 1;
-          targetInnerScale = 1;
-        }
-      };
-      const onDown = () => {
-        targetOuterScale = 0.75;
-        targetInnerScale = 0.75;
-        setTimeout(() => { targetOuterScale = 1; targetInnerScale = 1; }, 120);
-      };
-
-      window.addEventListener('mousemove', onMove, { passive: true });
-      window.addEventListener('mouseover', onOver, { passive: true });
-      window.addEventListener('mouseout', onOut, { passive: true });
-      window.addEventListener('mousedown', onDown, { passive: true });
-
-      function tick() {
-        if (!running) return;
-
-        // Lerp positions at native Hz
-        innerX += (mouseX - innerX) * 0.92;
-        innerY += (mouseY - innerY) * 0.92;
-        outerX += (mouseX - outerX) * 0.12;
-        outerY += (mouseY - outerY) * 0.12;
-        glowX += (mouseX - glowX) * 0.08;
-        glowY += (mouseY - glowY) * 0.08;
-
-        // Lerp scales
-        outerScale += (targetOuterScale - outerScale) * 0.15;
-        innerScale += (targetInnerScale - innerScale) * 0.2;
-
-        // GPU-accelerated transforms
-        inner.style.transform = `translate3d(${innerX - 3}px, ${innerY - 3}px, 0) scale(${innerScale})`;
-        outer.style.transform = `translate3d(${outerX - 16}px, ${outerY - 16}px, 0) scale(${outerScale})`;
-        glow.style.transform = `translate3d(${glowX - 100}px, ${glowY - 100}px, 0)`;
-
-        requestAnimationFrame(tick);
+      if (glow) {
+        // High speed responsive drag (0.45 factor) — follows right with the cursor without falling behind
+        glowX += (mouseX - glowX) * 0.45;
+        glowY += (mouseY - glowY) * 0.45;
+        glow.style.transform = `translate3d(${glowX - 110}px, ${glowY - 110}px, 0)`;
       }
 
-      requestAnimationFrame(tick);
+      outerScale += (targetOuterScale - outerScale) * 0.35;
+      updatePosition(mouseX, mouseY);
 
-      outerRef._cleanup = () => {
-        running = false;
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('mouseover', onOver);
-        window.removeEventListener('mouseout', onOut);
-        window.removeEventListener('mousedown', onDown);
-      };
-    });
+      requestAnimationFrame(tick);
+    }
+
+    const animId = requestAnimationFrame(tick);
 
     return () => {
-      cancelAnimationFrame(initFrame);
-      if (outerRef._cleanup) outerRef._cleanup();
+      running = false;
+      cancelAnimationFrame(animId);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseover', onOver);
+      window.removeEventListener('mouseout', onOut);
+      window.removeEventListener('mousedown', onDown);
+      window.removeEventListener('mouseup', onUp);
     };
   }, []);
 
-  // Mobile: soft fixed overlay glow
   if (isMobile) {
     return (
       <div
@@ -114,10 +108,10 @@ export default function CustomCursor() {
           position: 'fixed',
           top: '30%',
           left: '50%',
-          width: 300,
-          height: 300,
+          width: 320,
+          height: 320,
           transform: 'translate(-50%, -50%)',
-          background: 'radial-gradient(circle, rgba(249,168,38,0.06) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(249,168,38,0.08) 0%, transparent 70%)',
           borderRadius: '50%',
           pointerEvents: 'none',
           zIndex: 1,
@@ -129,24 +123,24 @@ export default function CustomCursor() {
 
   return (
     <>
-      {/* Glow overlay — soft golden radial that follows cursor */}
+      {/* Ambient Glow Opacity Overlay — Fast Smooth Drag */}
       <div
         ref={glowRef}
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
-          width: 200,
-          height: 200,
-          background: 'radial-gradient(circle, rgba(249,168,38,0.08) 0%, rgba(249,168,38,0.03) 40%, transparent 70%)',
+          width: 220,
+          height: 220,
+          background: 'radial-gradient(circle, rgba(249,168,38,0.18) 0%, rgba(249,168,38,0.05) 50%, transparent 70%)',
           borderRadius: '50%',
           pointerEvents: 'none',
-          zIndex: 1,
+          zIndex: 99990,
           willChange: 'transform',
         }}
         aria-hidden="true"
       />
-      {/* Outer ring */}
+      {/* Outer Circle Ring */}
       <div
         ref={outerRef}
         style={{
@@ -155,27 +149,28 @@ export default function CustomCursor() {
           left: 0,
           width: 32,
           height: 32,
-          border: '1px solid rgba(249, 168, 38, 0.5)',
+          border: '1.5px solid #F9A826',
+          boxShadow: '0 0 12px rgba(249, 168, 38, 0.4)',
           borderRadius: '50%',
           pointerEvents: 'none',
-          zIndex: 9999,
-          mixBlendMode: 'difference',
+          zIndex: 99999,
           willChange: 'transform',
         }}
       />
-      {/* Inner dot */}
+      {/* Inner Dot */}
       <div
         ref={innerRef}
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
-          width: 6,
-          height: 6,
+          width: 8,
+          height: 8,
           backgroundColor: '#F9A826',
+          boxShadow: '0 0 8px #F9A826',
           borderRadius: '50%',
           pointerEvents: 'none',
-          zIndex: 9999,
+          zIndex: 99999,
           willChange: 'transform',
         }}
       />

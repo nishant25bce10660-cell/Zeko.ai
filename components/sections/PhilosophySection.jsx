@@ -1,94 +1,153 @@
 'use client';
-import { useEffect, useRef } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger);
-}
+import { useRef } from 'react';
+import { openChat } from '../ui/ChatWidget';
 
+/**
+ * 03. Philosophy Widget — Video Showcase Card Style
+ */
 export default function PhilosophySection() {
   const sectionRef = useRef(null);
-  const quoteRef = useRef(null);
-  const pillarsRef = useRef(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        quoteRef.current,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 75%',
-          },
-        }
-      );
-
-      gsap.fromTo(
-        pillarsRef.current.children,
-        { opacity: 0, y: 50 },
-        {
-          opacity: 1,
-          y: 0,
-          stagger: 0.2,
-          duration: 0.8,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: pillarsRef.current,
-            start: 'top 85%',
-          },
-        }
-      );
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
 
   const pillars = [
     {
       num: '01',
+      category: 'EMPATHY',
       title: 'Human First',
       text: 'Every algorithm begins with empathy. We design AI that enhances human decision-making, never overrides it.'
     },
     {
       num: '02',
+      category: 'OPEN AI',
       title: 'Radical Transparency',
       text: 'No black boxes. Our AI explains its reasoning, building trust through understanding.'
     },
     {
       num: '03',
+      category: 'ALIGNMENT',
       title: 'Continuous Evolution',
       text: 'Our systems learn alongside your team, growing more intelligent and aligned with each interaction.'
     }
   ];
 
   return (
-    <section id="philosophy" className="section" ref={sectionRef} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
-      <div className="section-inner" style={{ width: '100%', padding: '6rem 0' }}>
-        <div ref={quoteRef} style={{ textAlign: 'center', marginBottom: '6rem' }}>
-          <h2 className="heading-lg text-center max-w-[900px] mx-auto mb-4" style={{ letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-            &quot;Technology should amplify humanity, not replace it.&quot;
-          </h2>
-          <p className="text-muted" style={{ fontSize: '1.1rem' }}>— The Zeko Principle</p>
+    <section
+      id="philosophy"
+      className="section widget-container"
+      ref={sectionRef}
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '4rem 1.5rem',
+        willChange: 'transform, opacity',
+      }}
+    >
+      <div
+        className="glass-card"
+        style={{
+          width: '100%',
+          maxWidth: 1240,
+          background: 'rgba(18, 18, 18, 0.92)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderRadius: 28,
+          padding: 'clamp(2rem, 4vw, 3rem)',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.5)',
+        }}
+      >
+        {/* Header Row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            <span data-stagger="number" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 800, color: '#fff', lineHeight: 1, fontFamily: 'var(--font-heading)', letterSpacing: '-0.03em' }}>
+              03
+            </span>
+            <div>
+              <div data-stagger="label" style={{ fontSize: 12, fontWeight: 700, color: '#F9A826', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+                OUR PHILOSOPHY
+              </div>
+              <div data-stagger="title" style={{ fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)', fontWeight: 700, color: '#fff' }}>
+                Human-Centered Core Principles
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={openChat}
+            aria-label="Open AI Chat Window"
+            data-stagger="btn"
+            style={{
+              padding: '8px 18px',
+              borderRadius: 999,
+              border: '1px solid rgba(249, 168, 38, 0.4)',
+              background: 'rgba(249, 168, 38, 0.1)',
+              color: '#F9A826',
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+            data-magnetic
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(249, 168, 38, 0.25)';
+              e.currentTarget.style.borderColor = 'rgba(249, 168, 38, 0.7)';
+              e.currentTarget.style.boxShadow = '0 0 20px rgba(249, 168, 38, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(249, 168, 38, 0.1)';
+              e.currentTarget.style.borderColor = 'rgba(249, 168, 38, 0.4)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <span>PRINCIPLES</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6h7M9.5 6L6.5 3M9.5 6L6.5 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
         </div>
 
-        <div ref={pillarsRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+        {/* Quote & Pillars Grid */}
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <h2 data-stagger="desc" style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', fontWeight: 600, color: '#fff', maxWidth: 900, margin: '0 auto 0.75rem', lineHeight: 1.3 }}>
+            &quot;Technology should amplify humanity, not replace it.&quot;
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>— The Zeko Principle</p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
           {pillars.map((pillar, i) => (
-            <div key={i} style={{ 
-              position: 'relative', 
-              padding: '0 2rem',
-              borderLeft: i !== 0 ? '1px solid rgba(255,255,255,0.08)' : 'none' 
-            }}>
-              <div style={{ color: 'var(--gold)', fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem' }}>
-                {pillar.num}
+            <div
+              key={i}
+              data-stagger="card"
+              onClick={openChat}
+              style={{
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: 20,
+                padding: '1.75rem',
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                e.currentTarget.style.borderColor = 'rgba(249, 168, 38, 0.4)';
+                e.currentTarget.style.transform = 'translateY(-4px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <span style={{ color: '#F9A826', fontSize: '1.1rem', fontWeight: 800 }}>{pillar.num}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255, 255, 255, 0.4)' }}>{pillar.category}</span>
               </div>
-              <h3 className="heading-md" style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>{pillar.title}</h3>
-              <p className="body-md" style={{ color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>{pillar.text}</p>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#fff', marginBottom: '0.75rem' }}>{pillar.title}</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>{pillar.text}</p>
             </div>
           ))}
         </div>
