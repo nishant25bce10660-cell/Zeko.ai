@@ -12,18 +12,39 @@ export function openChat() {
   }
 }
 
+// File Reader Helpers
+const readFileAsDataURL = (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+};
+
+const readFileAsText = (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = () => resolve(null);
+    reader.readAsText(file);
+  });
+};
+
 /**
- * Premium Fullscreen Chat Widget with Accessible File Attachments & External Trigger
+ * Premium Fullscreen Chat Widget with Single-Container Smooth Scrolling
  */
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState('');
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const panelRef = useRef(null);
   const bubbleRef = useRef(null);
   const fileInputRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
   const toggleChat = () => {
     const next = !isOpen;
@@ -38,7 +59,34 @@ export default function ChatWidget() {
     }
   };
 
-  // Listen for global open-chat event & Escape key
+  // Lock Lenis & Body Scroll when Chat Modal is Open
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      if (window.__lenis) {
+        window.__lenis.stop();
+      }
+    } else {
+      document.body.style.overflow = '';
+      if (window.__lenis) {
+        window.__lenis.start();
+      }
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      if (window.__lenis) {
+        window.__lenis.start();
+      }
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape' && isOpen) setIsOpen(false);
@@ -67,16 +115,39 @@ export default function ChatWidget() {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    const newAttachments = files.map((file) => ({
-      id: Math.random().toString(36).substring(2, 9),
-      name: file.name,
-      size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-      fileObj: file,
-    }));
+    const newAttachments = await Promise.all(
+      files.map(async (file) => {
+        const type = file.type || '';
+        let fileCategory = 'other';
+        let previewUrl = null;
+
+        if (type.startsWith('image/')) {
+          fileCategory = 'image';
+          previewUrl = await readFileAsDataURL(file);
+        } else if (
+          type.startsWith('text/') ||
+          /\.(txt|csv|json|md|js|jsx|ts|tsx|html|css|py|c|cpp)$/i.test(file.name)
+        ) {
+          fileCategory = 'text';
+        } else if (type.startsWith('video/')) {
+          fileCategory = 'video';
+          previewUrl = await readFileAsDataURL(file);
+        }
+
+        return {
+          id: Math.random().toString(36).substring(2, 9),
+          name: file.name,
+          size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+          type: fileCategory,
+          previewUrl,
+          fileObj: file,
+        };
+      })
+    );
 
     setAttachedFiles((prev) => [...prev, ...newAttachments]);
     e.target.value = '';
@@ -86,20 +157,81 @@ export default function ChatWidget() {
     setAttachedFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const handleSendMessage = (textToSend = inputText) => {
+  const handleSendMessage = async (textToSend = inputText) => {
     const trimmed = textToSend.trim();
-    if (!trimmed && attachedFiles.length === 0) return;
+    if ((!trimmed && attachedFiles.length === 0) || isLoading) return;
 
-    const newMessage = {
+    const currentFiles = [...attachedFiles];
+
+    const payloadFiles = await Promise.all(
+      currentFiles.map(async (f) => {
+        if (!f.fileObj) return { name: f.name, size: f.size, type: f.type, dataUrl: f.previewUrl };
+        const type = f.fileObj.type || '';
+
+        if (type.startsWith('image/')) {
+          const dataUrl = f.previewUrl || (await readFileAsDataURL(f.fileObj));
+          return { name: f.name, size: f.size, type: 'image', dataUrl };
+        } else if (
+          type.startsWith('text/') ||
+          /\.(txt|csv|json|md|js|jsx|ts|tsx|html|css|py|c|cpp)$/i.test(f.name)
+        ) {
+          const textContent = await readFileAsText(f.fileObj);
+          return { name: f.name, size: f.size, type: 'text', textContent };
+        } else if (type.startsWith('video/')) {
+          const dataUrl = f.previewUrl || (await readFileAsDataURL(f.fileObj));
+          return { name: f.name, size: f.size, type: 'video', dataUrl };
+        } else {
+          return { name: f.name, size: f.size, type: 'other' };
+        }
+      })
+    );
+
+    const userMsg = {
       id: Date.now(),
       sender: 'user',
       text: trimmed,
-      files: [...attachedFiles],
+      files: currentFiles,
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => [...prev, userMsg]);
     setInputText('');
     setAttachedFiles([]);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messages,
+          userMessage: trimmed,
+          files: payloadFiles,
+        }),
+      });
+
+      const data = await res.json();
+
+      const aiMsg = {
+        id: Date.now() + 1,
+        sender: 'assistant',
+        text: data.content || 'Something went wrong.',
+        isFallback: data.isFallback,
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (err) {
+      console.error('Chat error:', err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: 'assistant',
+          text: `⚠️ Network error: Could not reach the AI route. ${err.message}`,
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -111,12 +243,13 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Hidden Real File Input */}
+      {/* Hidden File Input */}
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
         multiple
+        accept="image/*,video/*,audio/*,.txt,.pdf,.csv,.json,.md,.js,.jsx,.ts,.tsx,.html,.css,.py"
         style={{ display: 'none' }}
         aria-hidden="true"
       />
@@ -170,13 +303,16 @@ export default function ChatWidget() {
       {isOpen && (
         <div
           ref={panelRef}
+          data-lenis-prevent
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 7999,
+            zIndex: 99995,
             display: 'flex',
             background: '#090909',
             color: '#fff',
+            overscrollBehavior: 'contain',
+            touchAction: 'pan-y',
           }}
         >
           {/* Left Sidebar */}
@@ -244,14 +380,37 @@ export default function ChatWidget() {
             </div>
           </div>
 
-          {/* Main Panel Area */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto' }}>
+          {/* Main Panel Area — Single Unified Scroll Container */}
+          <div
+            data-lenis-prevent
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'relative',
+              overflowY: 'auto',
+              overscrollBehavior: 'contain',
+              padding: '60px 24px 40px',
+            }}
+          >
+            {/* Header Badge */}
             <div style={{ position: 'absolute', top: 20, right: 24, display: 'flex', alignItems: 'center', gap: 12, zIndex: 10 }}>
               <span style={{ color: '#888', fontSize: 14 }}>Guest User</span>
               <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #F9A826, #FFC857)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#090909' }}>G</div>
             </div>
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px 30px', maxWidth: 840, margin: '0 auto', width: '100%' }}>
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: messages.length === 0 ? 'center' : 'flex-start',
+                maxWidth: 840,
+                margin: '0 auto',
+                width: '100%',
+              }}
+            >
               {messages.length === 0 ? (
                 <>
                   <div style={{ width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle at 40% 35%, rgba(249,168,38,0.2), rgba(249,168,38,0.02) 60%, transparent)', border: '1px solid rgba(249,168,38,0.12)', marginBottom: 36, position: 'relative', boxShadow: '0 0 40px rgba(249,168,38,0.08)' }}>
@@ -292,31 +451,87 @@ export default function ChatWidget() {
                   </div>
                 </>
               ) : (
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 30, flex: 1, overflowY: 'auto' }}>
-                  {messages.map((m) => (
-                    <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                      <div style={{ background: 'rgba(249, 168, 38, 0.12)', border: '1px solid rgba(249, 168, 38, 0.3)', borderRadius: '16px 16px 4px 16px', padding: '12px 18px', maxWidth: '80%', color: '#fff', fontSize: 15, lineHeight: 1.5 }}>
-                        {m.text}
-                        {m.files.length > 0 && (
-                          <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            {m.files.map((f) => (
-                              <span key={f.id} style={{ background: 'rgba(0,0,0,0.4)', padding: '4px 10px', borderRadius: 8, fontSize: 12, color: '#F9A826', border: '1px solid rgba(249,168,38,0.2)' }}>
-                                📎 {f.name} ({f.size})
-                              </span>
-                            ))}
+                /* Natural Flow Messages List */
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 30 }}>
+                  {messages.map((m) => {
+                    const isUser = m.sender === 'user';
+                    return (
+                      <div
+                        key={m.id}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: isUser ? 'flex-end' : 'flex-start',
+                        }}
+                      >
+                        {!isUser && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                            <div style={{ width: 22, height: 22, borderRadius: 6, background: '#F9A826', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#090909' }}>Z</div>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#F9A826' }}>Zeko.ai Multimodal AI</span>
                           </div>
                         )}
+                        <div
+                          style={{
+                            background: isUser ? 'rgba(249, 168, 38, 0.14)' : 'rgba(255, 255, 255, 0.05)',
+                            border: isUser ? '1px solid rgba(249, 168, 38, 0.35)' : '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: isUser ? '18px 18px 4px 18px' : '4px 18px 18px 18px',
+                            padding: '14px 20px',
+                            maxWidth: '85%',
+                            color: '#fff',
+                            fontSize: 15,
+                            lineHeight: 1.6,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          {m.text}
+                          {m.files && m.files.length > 0 && (
+                            <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              {m.files.map((f) => (
+                                <div key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                  {f.previewUrl && (f.type === 'image' || f.type === 'video') && (
+                                    <div style={{ width: 100, height: 100, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(249, 168, 38, 0.4)', position: 'relative' }}>
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img src={f.previewUrl} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                  )}
+                                  <span style={{ background: 'rgba(0,0,0,0.5)', padding: '4px 10px', borderRadius: 8, fontSize: 12, color: '#F9A826', border: '1px solid rgba(249,168,38,0.2)' }}>
+                                    📎 {f.name} ({f.size})
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Loading Indicator */}
+                  {isLoading && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <div style={{ width: 22, height: 22, borderRadius: 6, background: '#F9A826', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#090909' }}>Z</div>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#F9A826' }}>Zeko.ai Multimodal AI</span>
+                      </div>
+                      <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '4px 18px 18px 18px', padding: '12px 18px', color: '#B5B5B5', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>👁️</span>
+                        <span>Reading file/image and generating response...</span>
                       </div>
                     </div>
-                  ))}
+                  )}
+
+                  <div ref={messagesEndRef} />
                 </div>
               )}
 
-              <div style={{ width: '100%', maxWidth: 740, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '16px 20px', position: 'relative', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+              {/* Input Area */}
+              <div style={{ width: '100%', maxWidth: 740, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '16px 20px', position: 'relative', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', marginTop: 'auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: '#F9A826' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2l1.09 6.26L18 9.27l-4.91 1.01L12 16.54l-1.09-6.26L6 9.27l4.91-1.01L12 2zm4.5 11l.55 3.15 2.95.5-2.95.51L16.5 20.3l-.55-3.14-2.95-.51 2.95-.5.55-3.15zM5.5 13l.55 3.15 2.95.5-2.95.51L5.5 20.3l-.55-3.14-2.95-.51 2.95-.5L5.5 13z" />
                   </svg>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(249,168,38,0.8)' }}>Multimodal Vision & Document AI</span>
                 </div>
 
                 <input
@@ -324,7 +539,8 @@ export default function ChatWidget() {
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask me anything......."
+                  placeholder={isLoading ? 'Zeko.ai is reading files & generating response...' : 'Ask me anything about photos, videos, or documents.......'}
+                  disabled={isLoading}
                   style={{
                     width: '100%',
                     background: 'transparent',
@@ -334,26 +550,31 @@ export default function ChatWidget() {
                     fontSize: 16,
                     fontFamily: 'var(--font-body)',
                     marginBottom: 12,
+                    opacity: isLoading ? 0.5 : 1,
                   }}
                 />
 
                 {attachedFiles.length > 0 && (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, padding: '6px 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12, padding: '8px 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                     {attachedFiles.map((file) => (
                       <div
                         key={file.id}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 6,
+                          gap: 8,
                           background: 'rgba(249, 168, 38, 0.12)',
                           border: '1px solid rgba(249, 168, 38, 0.3)',
-                          borderRadius: 8,
-                          padding: '4px 10px',
+                          borderRadius: 10,
+                          padding: '6px 12px',
                           fontSize: 12,
                           color: '#F9A826',
                         }}
                       >
+                        {file.previewUrl && file.type === 'image' && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={file.previewUrl} alt={file.name} style={{ width: 24, height: 24, borderRadius: 4, objectFit: 'cover' }} />
+                        )}
                         <span>📎 {file.name} ({file.size})</span>
                         <button
                           onClick={() => removeFile(file.id)}
@@ -379,6 +600,7 @@ export default function ChatWidget() {
                   <button
                     onClick={handleFileClick}
                     type="button"
+                    disabled={isLoading}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -389,30 +611,31 @@ export default function ChatWidget() {
                       padding: '8px 16px',
                       color: '#ddd',
                       fontSize: 13,
-                      cursor: 'pointer',
+                      cursor: isLoading ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
                     }}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                       <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                    <span>{attachedFiles.length > 0 ? `Attach more (${attachedFiles.length})` : 'Attach file'}</span>
+                    <span>{attachedFiles.length > 0 ? `Attach more (${attachedFiles.length})` : 'Attach photo/file/video'}</span>
                   </button>
 
                   <button
                     onClick={() => handleSendMessage()}
                     type="button"
+                    disabled={isLoading}
                     style={{
                       width: 40,
                       height: 40,
                       borderRadius: 12,
-                      background: '#F9A826',
+                      background: isLoading ? '#555' : '#F9A826',
                       border: 'none',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: 'pointer',
-                      boxShadow: '0 0 16px rgba(249, 168, 38, 0.4)',
+                      cursor: isLoading ? 'not-allowed' : 'pointer',
+                      boxShadow: isLoading ? 'none' : '0 0 16px rgba(249, 168, 38, 0.4)',
                     }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
